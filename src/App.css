@@ -1,0 +1,15 @@
+@font-face {
+  font-family: "Comfortaa";
+  src: url("./assets/font/Comfortaa/Comfortaa-VariableFont_wght.ttf")
+    format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Quicksand";
+  src: url("./assets/font/Quicksand/Quicksand-VariableFont_wght.ttf")
+    format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}

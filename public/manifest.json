@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "LinkedIn Follower Grower",
+  "version": "1.0",
+  "description": "Grow your LinkedIn followers automatically through mutual follow",
+  "host_permissions": ["*://*.linkedin.com/*"],
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "scripting",
+    "storage",
+    "cookies",
+    "alarms"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icon.png",
+      "24": "icon.png",
+      "32": "icon.png"
+    },
+    "default_popup": "index.html"
+  },
+  "icons": {
+    "16": "icon.png",
+    "32": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
