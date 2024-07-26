@@ -27,7 +27,17 @@ const Loader = () => {
           >
             If Still Loading Please Close and Reopen
           </p>
-        ) : null}
+        ) : (
+          <p
+            style={{
+              fontFamily: "Quicksand",
+              color: "#084649",
+            }}
+            className="text-sm font-medium text-center my-3"
+          >
+            Please do not close this tab
+          </p>
+        )}
       </div>
 
       <div

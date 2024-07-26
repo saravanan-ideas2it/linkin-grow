@@ -143,6 +143,7 @@ const chromeScriptingFunction = (firstTab, callback) => {
       });
 
       callback(profileDetails);
+      chrome.tabs.remove(firstTab.id);
     }
   );
 };
@@ -272,6 +273,18 @@ async function clickFollowBtn() {
   return isFollowed;
 }
 
+function getTabUrl(tabId) {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.get(tabId, function (tab) {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError.message);
+      } else {
+        resolve(tab.url);
+      }
+    });
+  });
+}
+
 async function startFollowUsers(tabId, usersList) {
   try {
     for (let userIndex in usersList) {
@@ -284,6 +297,13 @@ async function startFollowUsers(tabId, usersList) {
           resolve();
         }, 15000);
       });
+
+      let userNotFoundUrl = await getTabUrl(tabId);
+
+      if (userNotFoundUrl === "https://www.linkedin.com/404/") {
+        console.log("User Banned");
+        continue;
+      }
 
       chrome.scripting.executeScript(
         {
@@ -328,6 +348,8 @@ async function startFollowUsers(tabId, usersList) {
         }, 15000);
       });
     }
+
+    chrome.tabs.remove(tabId);
   } catch (error) {
     console.log(error);
   }
@@ -566,7 +588,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
   if (details.reason === "install" || details.reason === "update") {
     chrome.alarms.create("getDataAndFollow", {
-      periodInMinutes: 15,
+      periodInMinutes: 10,
     });
   }
 });
@@ -580,7 +602,7 @@ chrome.runtime.onStartup.addListener(async () => {
 
   console.log("Started...");
   chrome.alarms.create("getDataAndFollow", {
-    periodInMinutes: 15,
+    periodInMinutes: 10,
   });
 });
 
