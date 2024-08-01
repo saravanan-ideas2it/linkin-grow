@@ -37,7 +37,7 @@ const DisplayProfile = () => {
           >
             {profileDetails.country}
           </p>
-          <a
+          {/* <a
             href="https://www.linkedin.com/mynetwork/network-manager/people-follow/followers/"
             target="_blank"
             className="flex items-center hover:underline"
@@ -54,7 +54,7 @@ const DisplayProfile = () => {
               className="non-italic font-medium text-xs ml-1"
               style={{ color: "#2E64BC" }}
             />
-          </a>
+          </a> */}
         </div>
       </div>
 

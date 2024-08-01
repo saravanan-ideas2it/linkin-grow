@@ -26,12 +26,12 @@ const AvatarItem = (props) => {
         >
           {avatarDetail.country}
         </p>
-        <p
+        {/* <p
           className="non-italic font-medium text-xs"
           style={{ fontFamily: "Quicksand", color: "#2E64BC" }}
         >
           {avatarDetail.existingFollowerCount}
-        </p>
+        </p> */}
       </div>
     </div>
   );

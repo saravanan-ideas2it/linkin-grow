@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Follower Grower",
-  "version": "1.0.1",
-  "description": "Grow your LinkedIn followers automatically through mutual follow",
+  "version": "1.0.2",
+  "description": "Grow your LinkedIn followers automatically through mutual follows—approximately 50 followers per week",
   "host_permissions": ["*://*.linkedin.com/*"],
   "permissions": [
     "tabs",

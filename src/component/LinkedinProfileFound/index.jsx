@@ -17,7 +17,7 @@ function LinkedinProfileFound() {
       storedActivePage: pageModeConstants.inProgress,
     });
 
-    const { name, country, profileId, profileUrl, followersCount } =
+    const { name, country, profileId, profileUrl, followersCount, emailId } =
       profileDetails;
 
     const userProfile = {
@@ -26,6 +26,7 @@ function LinkedinProfileFound() {
       image_url: profileUrl,
       existing_follower_count: followersCount,
       country,
+      email_id: emailId,
     };
 
     try {

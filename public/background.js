@@ -48,7 +48,7 @@ const clickAndExtractProfileDetails = async () => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         window.scrollTo(0, document.body.scrollHeight);
-        setTimeout(() => {
+        setTimeout(async () => {
           const countryElement = document.querySelector(
             ".mt2.relative span.text-body-small.inline.t-black--light.break-words"
           );
@@ -67,11 +67,37 @@ const clickAndExtractProfileDetails = async () => {
             .querySelector('a[href="https://www.linkedin.com/feed/followers/"]')
             .querySelector("strong").textContent;
 
+          // Click Contact Info to get Email ID
+          document
+            .querySelector(
+              "body > div:nth-of-type(5) > div:nth-of-type(3) > div > div > div:nth-of-type(2) > div > div > main > section:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > span:nth-of-type(2) > a"
+            )
+            .click();
+
+          await new Promise((resolve) => {
+            setTimeout(() => {
+              resolve();
+            }, 2000);
+          });
+
+          // Without Website
+          const emailIdElementTypeOne = document.querySelector(
+            "body > div:nth-of-type(3) > div > div > div:nth-of-type(2) > section > div > section:nth-of-type(2) > div > a"
+          );
+          // With Website
+          const emailIdElementTypeTwo = document.querySelector(
+            "body > div:nth-of-type(3) > div > div > div:nth-of-type(2) > section > div > section:nth-of-type(3) > div > a"
+          );
+          const emailIdElement = emailIdElementTypeOne
+            ? emailIdElementTypeOne
+            : emailIdElementTypeTwo;
+
           if (
             countryElement &&
             profileNameElement &&
             anchorElement &&
-            followersCount
+            followersCount &&
+            emailIdElement
           ) {
             const href = anchorElement.getAttribute("href");
             let profileIdList = [];
@@ -95,6 +121,7 @@ const clickAndExtractProfileDetails = async () => {
             const imageElementSrc = imageElement
               ? imageElement.src
               : "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png";
+            const emailId = emailIdElement.textContent.trim();
 
             const profileDetailsObj = {
               profileId: profileId,
@@ -103,6 +130,7 @@ const clickAndExtractProfileDetails = async () => {
               country: countryText,
               isSignedIn: true,
               followersCount,
+              emailId,
             };
 
             resolve(profileDetailsObj);
@@ -236,9 +264,15 @@ async function clickFollowBtn() {
     'div.artdeco-dropdown__item.artdeco-dropdown__item--is-dropdown.ember-view.full-width.display-flex.align-items-center[aria-label^="Follow"]'
   );
 
+  const alreadyFollowedBtn = document.querySelector(
+    'div.artdeco-dropdown__item.artdeco-dropdown__item--is-dropdown.ember-view.full-width.display-flex.align-items-center[aria-label^="Unfollow"]'
+  );
+
   if (followBtnElement) {
     followBtnElement.click();
     isFollowed = true;
+  } else if (alreadyFollowedBtn) {
+    isFollowed = "alreadyFollowed";
   } else if (followBtnOutlineElement) {
     followBtnOutlineElement.click();
     isFollowed = true;
@@ -302,6 +336,37 @@ async function startFollowUsers(tabId, usersList) {
 
       if (userNotFoundUrl === "https://www.linkedin.com/404/") {
         console.log("User Banned");
+
+        const apiUrl = "http://52.72.128.87:3000/api/user/updatesuspend";
+
+        chrome.cookies.get(
+          {
+            url: "https://www.linkedin.com",
+            name: "atk",
+          },
+          async function (cookie) {
+            if (cookie) {
+              const accessToken = cookie.value;
+
+              const options = {
+                method: "PUT",
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  linkedinId: usersList[userIndex].toFollowLinkedinId,
+                }),
+              };
+
+              const response = await fetch(apiUrl, options);
+              const data = await response.json();
+            } else {
+              console.log("Cookie not found");
+            }
+          }
+        );
+
         continue;
       }
 
@@ -313,11 +378,18 @@ async function startFollowUsers(tabId, usersList) {
         async (results) => {
           if (chrome.runtime.lastError) {
             console.error(chrome.runtime.lastError.message);
-          } else if (results && results[0] && results[0].result === true) {
+          } else if (
+            results &&
+            results[0] &&
+            (results[0].result === true ||
+              results[0].result === "alreadyFollowed")
+          ) {
+            console.log("Already Followed");
             const apiUrl = `http://52.72.128.87:3000/api/mutual/updatefollowstatus`;
             const followItemId = {
               followListItemId: usersList[userIndex].id,
             };
+
             const options = {
               method: "POST",
               headers: {
@@ -357,19 +429,10 @@ async function startFollowUsers(tabId, usersList) {
 // Follow Users Code End
 
 function initiateStartFollowUsers(followerList) {
-  chrome.tabs.query(
-    { url: "https://www.linkedin.com/*" },
-    async function (tabs) {
-      if (tabs.length > 0) {
-        await startFollowUsers(tabs[0].id, followerList);
-      } else {
-        chrome.tabs.create(
-          { url: "https://www.linkedin.com", active: false, index: 0 },
-          async function (newTab) {
-            await startFollowUsers(newTab.id, followerList);
-          }
-        );
-      }
+  chrome.tabs.create(
+    { url: "https://www.linkedin.com", active: false, index: 0 },
+    async function (newTab) {
+      await startFollowUsers(newTab.id, followerList);
     }
   );
 }
@@ -377,7 +440,7 @@ function initiateStartFollowUsers(followerList) {
 function formatFollowersList(followerList) {
   const formattedFollowerList = followerList.map((eachFollowers) => ({
     id: eachFollowers.id,
-    toFollowLinkedinId: eachFollowers.toFollowLinkedin,
+    toFollowLinkedinId: eachFollowers.to_follow_linkedin,
   }));
 
   return formattedFollowerList;
@@ -409,7 +472,7 @@ async function getFollowerListFromDB() {
 }
 
 // POST ON LINKEDIN
-const initiatePostOnLinkedIn = async () => {
+const initiatePostOnLinkedIn = async (currTab) => {
   await new Promise((resolve) => {
     setTimeout(() => {
       resolve();
@@ -462,6 +525,14 @@ https://chromewebstore.google.com/detail/linkedin-follower-grower/lnnpmjffjejpmd
         );
         postBtn.click();
       }
+
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 2000);
+      });
+
+      chrome.tabs.remove(currTab.id);
     }
   }
 };
@@ -471,6 +542,7 @@ const postContentOnLinkedIn = (firstTab, callback) => {
     {
       target: { tabId: firstTab.id },
       func: initiatePostOnLinkedIn,
+      args: [firstTab],
     },
     async () => {
       try {
@@ -496,41 +568,30 @@ const postContentOnLinkedIn = (firstTab, callback) => {
 const checkTabsToPostContentOnLinkedIn = (sendResponse) => {
   chrome.tabs.query({}, function (tabs) {
     if (tabs.length > 0) {
-      const firstTab = tabs[0];
-      const tabUrl = new URL(firstTab.url);
-      const tabUrlWithPath = tabUrl.origin + tabUrl.pathname;
-
-      if (
-        tabUrlWithPath === "https://www.linkedin.com/" ||
-        tabUrlWithPath === "https://www.linkedin.com/home"
-      ) {
-      } else if (tabUrlWithPath === "https://www.linkedin.com/feed/") {
-        postContentOnLinkedIn(firstTab, sendResponse);
-      } else {
-        chrome.tabs.create(
-          { url: "https://www.linkedin.com", active: false, index: 0 },
-          function (newTab) {
-            chrome.tabs.onUpdated.addListener(function listener(
-              tabId,
-              changeInfo
-            ) {
-              if (tabId === newTab.id && changeInfo.status === "complete") {
-                chrome.tabs.get(tabId, function (tabInfo) {
-                  if (
-                    tabInfo.url === "https://www.linkedin.com/" ||
-                    tabInfo.url === "https://www.linkedin.com/home"
-                  ) {
-                    console.log("Signed Out");
-                  } else if (tabInfo.url === "https://www.linkedin.com/feed/") {
-                    postContentOnLinkedIn(newTab, sendResponse);
-                  }
-                  chrome.tabs.onUpdated.removeListener(listener);
-                });
-              }
-            });
-          }
-        );
-      }
+      chrome.tabs.create(
+        { url: "https://www.linkedin.com", active: false, index: 0 },
+        function (newTab) {
+          chrome.tabs.onUpdated.addListener(function listener(
+            tabId,
+            changeInfo
+          ) {
+            if (tabId === newTab.id && changeInfo.status === "complete") {
+              chrome.tabs.get(tabId, function (tabInfo) {
+                if (
+                  tabInfo.url === "https://www.linkedin.com/" ||
+                  tabInfo.url === "https://www.linkedin.com/home"
+                ) {
+                  console.log("Signed Out");
+                  chrome.tabs.remove(newTab.id);
+                } else if (tabInfo.url === "https://www.linkedin.com/feed/") {
+                  postContentOnLinkedIn(newTab, sendResponse);
+                }
+                chrome.tabs.onUpdated.removeListener(listener);
+              });
+            }
+          });
+        }
+      );
     } else {
       console.log("No tabs found at index 0");
       sendResponse(null);
@@ -588,7 +649,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
   if (details.reason === "install" || details.reason === "update") {
     chrome.alarms.create("getDataAndFollow", {
-      periodInMinutes: 10,
+      periodInMinutes: 2,
     });
   }
 });
@@ -602,14 +663,14 @@ chrome.runtime.onStartup.addListener(async () => {
 
   console.log("Started...");
   chrome.alarms.create("getDataAndFollow", {
-    periodInMinutes: 10,
+    periodInMinutes: 2,
   });
 });
 
 // Listener for when the alarm goes off
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "getDataAndFollow") {
-    console.log("FOLLOW TRIGGGERED");
+    console.log("FOLLOW TRIGGERED");
     followEveryThirtyMinutes();
   }
 });
