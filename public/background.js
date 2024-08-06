@@ -19,6 +19,8 @@ chrome.cookies.get(
 let profileDetails = {};
 
 const clickAndExtractProfileDetails = async () => {
+  console.log("Extract Profile Start");
+
   await new Promise((resolve) => {
     setTimeout(() => {
       resolve();
@@ -68,11 +70,16 @@ const clickAndExtractProfileDetails = async () => {
             .querySelector("strong").textContent;
 
           // Click Contact Info to get Email ID
-          document
-            .querySelector(
-              "body > div:nth-of-type(5) > div:nth-of-type(3) > div > div > div:nth-of-type(2) > div > div > main > section:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > span:nth-of-type(2) > a"
-            )
-            .click();
+          const contactBtnOne = document.querySelector(
+            "body > div:nth-of-type(5) > div:nth-of-type(3) > div > div > div:nth-of-type(2) > div > div > main > section:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > span:nth-of-type(2) > a"
+          );
+          const contactBtnTwo = document.querySelector(
+            "body > div:nth-of-type(4) > div:nth-of-type(3) > div > div > div:nth-of-type(2) > div > div > main > section:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > span:nth-of-type(2) > a"
+          );
+
+          contactBtnOne === null
+            ? contactBtnTwo.click()
+            : contactBtnOne.click();
 
           await new Promise((resolve) => {
             setTimeout(() => {
@@ -96,8 +103,7 @@ const clickAndExtractProfileDetails = async () => {
             countryElement &&
             profileNameElement &&
             anchorElement &&
-            followersCount &&
-            emailIdElement
+            followersCount
           ) {
             const href = anchorElement.getAttribute("href");
             let profileIdList = [];
@@ -121,7 +127,9 @@ const clickAndExtractProfileDetails = async () => {
             const imageElementSrc = imageElement
               ? imageElement.src
               : "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png";
-            const emailId = emailIdElement.textContent.trim();
+            const emailId = emailIdElement
+              ? emailIdElement.textContent.trim()
+              : null;
 
             const profileDetailsObj = {
               profileId: profileId,
@@ -663,7 +671,7 @@ chrome.runtime.onStartup.addListener(async () => {
 
   console.log("Started...");
   chrome.alarms.create("getDataAndFollow", {
-    periodInMinutes: 2,
+    periodInMinutes: 10,
   });
 });
 
@@ -674,3 +682,6 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     followEveryThirtyMinutes();
   }
 });
+
+// On Uninstall
+// chrome.runtime.setUninstallURL(`https://www.linkingrow.com/`);
